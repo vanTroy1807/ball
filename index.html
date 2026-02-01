@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Question for You ❤️</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, rgba(253,251,251,0.65) 0%, rgba(235,237,238,0.65) 100%), url('assets/bg.jpg') center/cover no-repeat;
+            background-attachment: fixed;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+
+        .container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            position: relative;
+            z-index: 10;
+        }
+
+        h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+        }
+
+        .highlight {
+            color: #e91e63; /* Pink color */
+            font-weight: bold;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 15px 32px;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        #yesBtn {
+            background-color: #e91e63;
+            color: white;
+            box-shadow: 0 4px 15px rgba(233, 30, 99, 0.3);
+        }
+
+        #yesBtn:hover {
+            transform: scale(1.05);
+            background-color: #d81b60;
+        }
+
+        #noBtn {
+            background-color: #e0e0e0;
+            color: #333;
+            position: relative; /* Allows movement */
+        }
+
+        /* Confetti Canvas */
+        #confetti {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 5;
+        }
+        
+        /* Hidden success message */
+        .success-message {
+            display: none;
+            margin-top: 20px;
+            color: #e91e63;
+            font-size: 1.5rem;
+            animation: fadeIn 1s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Audio toggle button */
+        #audioToggle {
+            position: fixed;
+            right: 18px;
+            bottom: 18px;
+            z-index: 20;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255,255,255,0.85);
+            box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(4px);
+        }
+
+        /* Small notice shown when autoplay is blocked (animated) */
+        #audioNotice {
+            position: fixed;
+            right: 18px;
+            bottom: 76px;
+            z-index: 21;
+            background: rgba(0,0,0,0.75);
+            color: #fff;
+            padding: 10px 14px;
+            border-radius: 12px;
+            font-size: 14px;
+            opacity: 0;
+            transform: translateY(8px);
+            pointer-events: none;
+            visibility: hidden;
+        }
+
+        /* When visible, pointer events allowed; no animation (instant show/hide) */
+        #audioNotice.visible {
+            visibility: visible;
+            pointer-events: auto;
+            opacity: 1;
+            transform: none;
+        }
+
+        /* Hearts layer around the question box */
+        #hearts {
+            position: absolute;
+            inset: 0; /* cover viewport */
+            pointer-events: none;
+            z-index: 9; /* under container (z-index:10) so hearts appear around it */
+        }
+
+        .heart {
+            position: absolute;
+            will-change: transform, opacity;
+            font-size: 22px;
+            opacity: 0;
+            transform: translateY(8px) scale(0.9);
+            text-shadow: 0 2px 6px rgba(0,0,0,0.12);
+        }
+
+        @keyframes floatHeart {
+            0% { opacity: 0; transform: translateY(12px) scale(0.9) rotate(0deg); }
+            10% { opacity: 1; }
+            70% { opacity: 1; }
+            100% { opacity: 0; transform: translateY(-120px) translateX(var(--drift, 0px)) scale(1) rotate(20deg); }
+        }
+
+        /* Container enter animation */
+        .container {
+            opacity: 0;
+            transform: translateY(14px) scale(0.985);
+        }
+        .container.enter {
+            animation: containerIn 640ms cubic-bezier(.2,.9,.2,1) forwards;
+        }
+        @keyframes containerIn {
+            from { opacity: 0; transform: translateY(14px) scale(0.985); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="confetti"></canvas>
+    <div id="hearts" aria-hidden="true"></div>
+    <audio id="bgAudio" src="assets/song.mp3" loop preload="auto" autoplay playsinline></audio>
+    <button id="audioToggle" aria-label="Play music" title="Play/Pause music">🔊</button>
+    <div id="audioNotice" role="status" aria-live="polite">Tap anywhere to enable sound</div>
+
+    <div class="container">
+        <h1 id="question">Heyyy <span class="highlight">Mansi</span>,<br>Will you be my Valentine(this is more important)? and also my ball partner?</h1>
+        
+        <div class="buttons">
+            <button id="yesBtn">Yes!</button>
+            <button id="noBtn">No</button>
+        </div>
+
+        <div class="success-message" id="successMsg">
+            You couldn't say NO could you😏? And yeah you definitely tried that right?😒(JK) <br> I LOVE YOU😘, my sweetheart, and I know this one isn't half as cute as the one you made for me,<br> but let me make it upto you irl will you?😁 <br> Ohh and btw my dumbass doesn't know how to dance, so I'll be embarrassing us both🥰
+        </div>
+    </div>
+
+    <script>
+        const noBtn = document.getElementById('noBtn');
+        const yesBtn = document.getElementById('yesBtn');
+        const question = document.getElementById('question');
+        const buttonsDiv = document.querySelector('.buttons');
+        const successMsg = document.getElementById('successMsg');
+        const canvas = document.getElementById('confetti');
+        const ctx = canvas.getContext('2d');
+        const audio = document.getElementById('bgAudio');
+        const audioToggle = document.getElementById('audioToggle');
+        const heartsLayer = document.getElementById('hearts');
+        const container = document.querySelector('.container');
+
+        // Make the 'No' button run away
+        noBtn.addEventListener('mouseover', () => {
+            const container = document.querySelector('.container');
+            const containerRect = container.getBoundingClientRect();
+            
+            // Calculate boundaries relative to the container logic or viewport
+            const maxWidth = window.innerWidth - noBtn.offsetWidth;
+            const maxHeight = window.innerHeight - noBtn.offsetHeight;
+
+            const randomX = Math.random() * (maxWidth - 100) + 50; 
+            const randomY = Math.random() * (maxHeight - 100) + 50;
+
+            // Apply fixed positioning to break out of the flex layout
+            noBtn.style.position = 'fixed';
+            noBtn.style.left = randomX + 'px';
+            noBtn.style.top = randomY + 'px';
+        });
+
+        // 'Yes' button logic
+        yesBtn.addEventListener('click', () => {
+            buttonsDiv.style.display = 'none';
+            question.innerHTML = "Yay!";
+            successMsg.style.display = 'block';
+            startConfetti();
+        });
+
+        // Confetti Effect
+        function startConfetti() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            let pieces = [];
+            const colors = ['#e91e63', '#9c27b0', '#2196f3', '#ffeb3b'];
+
+            for (let i = 0; i < 150; i++) {
+                pieces.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    w: Math.random() * 10 + 5,
+                    h: Math.random() * 10 + 5,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    speed: Math.random() * 3 + 2
+                });
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                pieces.forEach(p => {
+                    ctx.fillStyle = p.color;
+                    ctx.fillRect(p.x, p.y, p.w, p.h);
+                    p.y += p.speed;
+                    if (p.y > canvas.height) p.y = -10;
+                });
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // Background audio handling — try autoplay, fallback to first user gesture
+        if (audio) {
+            const audioNotice = document.getElementById('audioNotice');
+            audio.volume = 0.35;
+            audio.muted = false;
+            function updateAudioIcon() {
+                audioToggle.textContent = audio.paused ? '🔈' : '🔊';
+                audioToggle.setAttribute('aria-pressed', (!audio.paused).toString());
+            }
+            function showAudioNotice() {
+                if (!audioNotice) return;
+                audioNotice.classList.add('visible');
+            }
+            function hideAudioNotice() {
+                if (!audioNotice) return;
+                audioNotice.classList.remove('visible');
+            }
+
+            audioToggle.addEventListener('click', () => {
+                if (audio.paused) {
+                    audio.play().then(() => {
+                        updateAudioIcon();
+                        hideAudioNotice();
+                    }).catch(() => {});
+                } else {
+                    audio.pause();
+                    updateAudioIcon();
+                }
+            });
+
+            // Attempt autoplay on load. If blocked, show notice and start on first click/tap — hide immediately when that click triggers playback
+            window.addEventListener('load', () => {
+                const playPromise = audio.play();
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        updateAudioIcon();
+                        hideAudioNotice();
+                    }).catch(() => {
+                        // Autoplay blocked: show notice and listen for first user gesture (anywhere)
+                        showAudioNotice();
+                        const startOnInteraction = () => {
+                            audio.play().then(() => {
+                                updateAudioIcon();
+                                hideAudioNotice();
+                            }).catch(() => {});
+                            window.removeEventListener('click', startOnInteraction);
+                            window.removeEventListener('touchstart', startOnInteraction);
+                        };
+                        window.addEventListener('click', startOnInteraction, { once: true });
+                        window.addEventListener('touchstart', startOnInteraction, { once: true });
+                        updateAudioIcon();
+                    });
+                } else {
+                    updateAudioIcon();
+                }
+            });
+        }
+
+        // Trigger the container enter animation on load (separate from audio autoplay)
+        window.addEventListener('load', () => {
+            if (container) container.classList.add('enter');
+        });
+
+        // Heart emoji spawner: creates floating hearts around the question box
+        (function setupHearts() {
+            if (!heartsLayer || !container) return;
+            const heartEmojis = ['❤️','💖','💘','❣️','💕','💓'];
+
+            function spawnHeart() {
+                const heart = document.createElement('div');
+                heart.className = 'heart';
+                heart.textContent = heartEmojis[Math.floor(Math.random()*heartEmojis.length)];
+                const size = Math.floor(Math.random()*20) + 18; // 18-38px
+                heart.style.fontSize = size + 'px';
+                // position around the container (slightly inside/outside)
+                const rect = container.getBoundingClientRect();
+                const pad = 28; // allow hearts to spawn a bit outside
+                const x = rect.left + (Math.random() * (rect.width + pad*2) - pad) + window.scrollX;
+                const y = rect.top + (Math.random() * (rect.height + pad*2) - pad) + window.scrollY;
+                heart.style.left = Math.round(x) + 'px';
+                heart.style.top = Math.round(y) + 'px';
+                // horizontal drift
+                const drift = Math.round((Math.random()*120) - 60); // -60..60px
+                heart.style.setProperty('--drift', drift + 'px');
+                // random duration and slight delay
+                heart.style.animation = `floatHeart ${4 + Math.random()*3}s linear forwards`;
+                heartsLayer.appendChild(heart);
+                heart.addEventListener('animationend', () => heart.remove());
+            }
+
+            // initial burst
+            for (let i=0;i<10;i++) setTimeout(spawnHeart, i*120);
+            // continuous spawning
+            setInterval(spawnHeart, 700);
+        })();
+    </script>
+</body>
+</html>
